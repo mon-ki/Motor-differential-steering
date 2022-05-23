@@ -1,0 +1,290 @@
+//////////////////TBN四路驱动引脚接线///////////////////////////
+//电机-------------TBN四路驱动丝印标识----------ArduinoUNO主板引脚
+//电机-------------DATA_ABC牛角座-----------ArduinoUNO主板引脚
+//                     EN(使能)------------2
+//                     5V-----------------5V
+//                     AD-----------------A0
+//                     G------------------GND
+//                     A1-----------------3
+//                     A2-----------------5
+//                     B1-----------------6
+//                     B2-----------------9
+//                     C1-----------------10
+//                     C2-----------------11
+
+//电机-------------DATA_D牛角座--------------ArduinoUNO主板引脚
+//                     5V------------------(与DATA_ABC牛角座5V引脚导通，两者可以只接通1个)
+//                     G-------------------(与DATA_ABC牛角座5V引脚导通，两者可以只接通1个)
+//                     EN------------------(与DATA_ABC牛角座5V引脚导通，两者可以只接通1个)
+//                     D2------------------13
+//                     D1------------------12
+//                     NC(悬空)------------
+//                     NC(悬空)------------
+//                     NC(悬空)------------
+//                     NC(悬空)------------
+//                     NC(悬空)------------
+//直流电机A-------------MotorA
+//直流电机B-------------MotorB
+//直流电机C-------------MotorC
+//直流电机D-------------MotorD
+//电机-------------TBN四路驱动丝印标识----------ArduinoUNO主板引脚
+
+//定义引脚名称 
+#define EN      2  //使能输出引脚，该引脚时高电平才允许控制直流电机，低电平时电机停止
+#define MotorA1 3  //PWM输出引脚，控制直流电机A
+#define AD      A0 //PWM输入引脚，读取电池电压
+#define MotorA2 5  //PWM输出引脚，控制直流电机A
+#define MotorB1 6  //PWM输出引脚，控制直流电机B
+#define MotorB2 9  //PWM输出引脚，控制直流电机B 
+#define MotorC1 10 //PWM输出引脚，控制直流电机C
+#define MotorC2 11 //PWM输出引脚，控制直流电机C
+#define MotorD1 12 //数字输出引脚，由于ArduinoUNO主板上的PWM输出引脚有限，
+#define MotorD2 13 //故只能使用数字输出引脚通过手动设置占空比控制直流电机D，缺点是控制效果较差
+#define cq1    22 //传感器左
+#define cq2    24 //传感器中1
+#define cq3    26//传感器中2
+
+int cnt=0;
+int state=LOW;
+void setup() 
+{
+  //引脚功能初始化
+  pinMode(EN, OUTPUT);
+  pinMode(MotorA1, OUTPUT);
+  pinMode(MotorA2, OUTPUT);
+  pinMode(MotorB1, OUTPUT);
+  pinMode(MotorB2, OUTPUT);
+  pinMode(MotorC1, OUTPUT);
+  pinMode(MotorC2, OUTPUT);
+  pinMode(MotorD1, OUTPUT);
+  pinMode(MotorD2, OUTPUT);
+  pinMode(cq1, INPUT);
+  pinMode(cq2, INPUT);
+  pinMode(cq3, INPUT);
+
+  pinMode(AD, INPUT);
+  
+
+  //初始化TBN单/双路驱动
+  digitalWrite(EN, 1); 
+  analogWrite(MotorA1, 0);
+  analogWrite(MotorA2, 0);
+  analogWrite(MotorB1, 0);
+  analogWrite(MotorB2, 0);
+  analogWrite(MotorC1, 0);
+  analogWrite(MotorC2, 0);
+  digitalWrite(MotorD1, 0);
+  digitalWrite(MotorD2, 0);
+  digitalWrite(cq1, 0); 
+  digitalWrite(cq2, 0);
+  digitalWrite(cq3, 0);
+  
+
+  Serial.begin(9600);
+}
+
+/**************************************************************************
+函数功能：设置电机A转速方向与大小
+入口参数：direction=1（0）代表正转（反转）；power范围为0~100，0代表停转，50代表半速，100代表满速
+返回  值：无
+**************************************************************************/
+void SetPowerA(int direction, int power)
+{
+  int pwm=255*power/100; //输出到模拟引脚的PWM信号范围为0~255
+  if(direction==1) //正转
+  {
+   analogWrite(MotorA1, 0); //MotorA1置0时电机正转
+   analogWrite(MotorA2, pwm); 
+  }
+  else if(direction==0) //反转
+  {
+   analogWrite(MotorA1, pwm);
+   analogWrite(MotorA2, 0); //MotorA2置0时电机反转
+  }
+}
+
+/**************************************************************************
+函数功能：设置电机B转速方向与大小
+入口参数：direction=1（0）代表正转（反转）；power范围为0~100，0代表停转，50代表半速，100代表满速
+返回  值：无
+**************************************************************************/
+void SetPowerB(int direction, int power)
+{
+  int pwm=255*power/100; //输出到模拟引脚的PWM信号范围为0~255
+  if(direction==1) //正转
+  {
+   analogWrite(MotorB1, 0); //MotorB1置0时电机正转
+   analogWrite(MotorB2, pwm);
+  }
+  else if(direction==0) //反转
+  {
+   analogWrite(MotorB1, pwm);
+   analogWrite(MotorB2, 0); //MotorB2置0时电机反转
+  }
+}
+
+/**************************************************************************
+函数功能：设置电机C转速方向与大小
+入口参数：direction=1（0）代表正转（反转）；power范围为0~100，0代表停转，50代表半速，100代表满速
+返回  值：无
+**************************************************************************/
+void SetPowerC(int direction, int power)
+{
+  int pwm=255*power/100; //输出到模拟引脚的PWM信号范围为0~255
+  if(direction==1) //正转
+  {
+   analogWrite(MotorC1, 0); //MotorC1置0时电机正转
+   analogWrite(MotorC2, pwm);
+  }
+  else if(direction==0) //反转
+  {
+   analogWrite(MotorC1, pwm);
+   analogWrite(MotorC2, 0); //MotorC2置0时电机反转
+  }
+}
+
+/**************************************************************************
+函数功能：设置电机D转速方向与大小
+入口参数：direction=1（0）代表正转（反转）；power范围为0~100，0代表停转，50代表半速，100代表满速
+返回  值：无
+**************************************************************************/
+void SetPowerD(int direction, int power)
+{
+  int pwm=255*power/100; //输出到模拟引脚的PWM信号范围为0~255
+  if(direction==1) //正转
+  {
+   analogWrite(MotorD1, 0); //MotorC1置0时电机正转
+   analogWrite(MotorD2, pwm);
+  }
+  else if(direction==0) //反转
+  {
+   analogWrite(MotorD1, pwm);
+   analogWrite(MotorD2, 0); //MotorC2置0时电机反转
+  }
+}
+
+  
+void loop() 
+{
+  int val1 = digitalRead(cq1); 
+  int val2= digitalRead(cq2); 
+  int val3 = digitalRead(cq3); 
+  
+  
+  double V=analogRead(AD); //读取模拟引脚A0模拟量
+  Serial.print(V/18.21);  //对模拟量转换并通过串口输出
+  Serial.println("V");
+  /*if(val3==HIGH){
+    if(val4==HIGH){
+      cnt++;
+    }
+    Serial.println(cnt);
+    if(cnt<=2){
+      
+    }
+  }*/
+  if(1){ //val2==HIGH
+   
+    if(val1==HIGH&&val3==HIGH){
+      cnt++;                                //goto loop;
+    }
+    Serial.println(cnt);
+    if(cnt<=2){
+       SetPowerA(1, 20); //ABCD电机100%功率正转
+       SetPowerB(1, 20);
+       SetPowerC(1, 20);
+       SetPowerD(1, 20); 
+      Serial.println("a");
+      delay(1000); //直流电机正转3s
+    }else if(cnt>2&&cnt<=4){
+       SetPowerA(0, 20);
+       SetPowerB(1, 20);
+       SetPowerC(0, 20);
+       SetPowerD(1, 20);
+       delay(1500); //直流电机正转3s
+       SetPowerA(1, 20); //ABCD电机100%功率正转
+       SetPowerB(1, 20);
+       SetPowerC(1, 20);
+       SetPowerD(1, 20); 
+       delay(1500);
+      Serial.println("b");
+    }else{
+       SetPowerA(1, 20); 
+       SetPowerB(0, 20);
+       SetPowerC(1, 20);
+       SetPowerD(0, 20);
+       delay(1500); 
+       SetPowerA(1, 20); //ABCD电机100%功率正转
+       SetPowerB(1, 20);
+       SetPowerC(1, 20);
+       SetPowerD(1, 20); 
+       delay(1500);
+        Serial.println("c");
+       if(cnt==6){
+         cnt=0;
+       }
+    }
+  }else{
+    SetPowerA(1, 0); //电机AB停止
+    SetPowerB(1, 0);
+    SetPowerC(1, 0);
+    SetPowerD(1, 0); 
+    delay(30); //直流电机停止1s
+    
+  }
+
+//  SetPowerA(1, 0); //电机AB停止
+//  SetPowerB(1, 0);
+//  SetPowerC(1, 0);
+//  SetPowerD(1, 0); 
+//  delay(1000); //直流电机停止1s
+//
+//  SetPowerA(1, 50); //ABCD电机50%功率正转
+//  SetPowerB(1, 50);
+//  SetPowerC(1, 50);
+//  SetPowerD(1, 50);
+//  delay(3000); //直流电机正转3s
+//  
+//  SetPowerA(1, 0); //电机AB停止
+//  SetPowerB(1, 0);
+//  SetPowerC(1, 0);
+//  SetPowerD(1, 0);
+//  delay(1000);//直流电机停止1s
+//
+//  SetPowerA(0, 50); //ABCD电机50%功率反转
+//  SetPowerB(0, 50);
+//  SetPowerC(0, 50);
+//  SetPowerD(0, 50);
+//  delay(3000); //直流电机反转3s
+//  
+//  SetPowerA(1, 0); //电机AB停止
+//  SetPowerB(1, 0);
+//  SetPowerC(1, 0);
+//  SetPowerD(1, 0);
+//  delay(1000);//直流电机停止1s
+//
+//  SetPowerA(0, 100); //ABCD电机100%功率反转
+//  SetPowerB(0, 100);
+//  SetPowerC(0, 100);
+//  SetPowerD(0, 100);
+//  delay(3000); //直流电机反转3s
+//  
+//  SetPowerA(1, 0); //电机AB停止
+//  SetPowerB(1, 0);
+//  SetPowerC(1, 0);
+//  SetPowerD(1, 0);
+//  delay(1000); //直流电机停止1s
+//
+//  SetPowerA(1, 50); //A电机50%功率正转
+//  SetPowerB(0, 50); //B电机50%功率反转
+//  SetPowerC(1, 50); //C电机50%功率正转
+//  SetPowerD(0, 50); //D电机50%功率反转
+//  delay(3000); //直流电机持续3s
+//  
+//  SetPowerA(1, 0); //电机ABCD停止
+//  SetPowerB(1, 0);
+//  SetPowerC(1, 0);
+//  SetPowerD(1, 0);
+//  delay(1000); //直流电机停止1s
+
+}
